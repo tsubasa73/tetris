@@ -50,7 +50,7 @@ public class Tetris{
 	}
 
 	Tetris(){
-		jf = new JFrame("てすと");
+		jf = new JFrame("てとりす");
 
 		jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		jf.setSize(width, height);
@@ -73,8 +73,8 @@ public class Tetris{
 
 	//初期化
 	public void init(){
-		for(int i = 0; i < field.length; i++)
-			for(int j = 0; j < field[i].length; j++)
+		for(int i = 0; i < field.length; i++){
+			for(int j = 0; j < field[i].length; j++){
 				if(i == 20){
 					field[i][j] = 12;
 				}else{
@@ -86,6 +86,13 @@ public class Tetris{
 						field[i][j] = 0;
 					}
 				}
+			}
+		}
+		for(int i = 0; i < b.length; i++){
+			for(int j = 0; j < b[i].length; j++){
+				b[i][j] = 0;
+			}
+		}
 		block = new Block();
 		setNextArray(0);
 		setNextArray(7);
@@ -120,8 +127,8 @@ public class Tetris{
 				}else{
 					startBlock();
 					if(gameOverCheck()){
-						gameOverEffect();
 						gameover = true;
+						gameOverEffect();
 						return;
 					}
 				}
@@ -578,13 +585,17 @@ public class Tetris{
 				setTempBlock();
 			}
 			if(keycode == KeyEvent.VK_ENTER){
-				deleteMark();
-				int num = dropBlock();
-				move(UNDER, num);
-				setBlock();
-				checkLine();
-				//deleteLineBlock();
-				downBlock();
+				if(gameover == false){
+					deleteMark();
+					int num = dropBlock();
+					move(UNDER, num);
+					setBlock();
+					checkLine();
+					//deleteLineBlock();
+					downBlock();
+				}else{
+					init();
+				}
 			}
 			if(key == 'z'){
 				deleteMark();
