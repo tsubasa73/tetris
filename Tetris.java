@@ -6,7 +6,6 @@ import java.util.Timer;
 import javax.swing.*;
 
 public class Tetris{
-
 	int[][] field = new int[21][12];
 	final int width = 650;
 	final int height = 600;
@@ -21,6 +20,8 @@ public class Tetris{
 	final int h = 15;
 	final int space = 10;
 	int bx, by;
+	int bx_default = 3;
+	int by_default = -2;
 	JFrame jf;
 	BufferStrategy bs;
 	Block block;
@@ -33,8 +34,8 @@ public class Tetris{
 	int set_cnt;
 	int[] next = new int[14];
 	int index = 0;
-	
-	final int MOVE_RATE = 15;
+
+	final int MOVE_RATE = 30;
 	final int SET_RATE = 3;
 	final int LEFT = 1;
 	final int RIGHT = 2;
@@ -42,7 +43,7 @@ public class Tetris{
 
 	boolean left_key = false;
 	boolean right_key = false;
-	
+
 	Timer timer;
 
 	public static void main(String[] args){
@@ -88,11 +89,6 @@ public class Tetris{
 				}
 			}
 		}
-		for(int i = 0; i < b.length; i++){
-			for(int j = 0; j < b[i].length; j++){
-				b[i][j] = 0;
-			}
-		}
 		block = new Block();
 		setNextArray(0);
 		setNextArray(7);
@@ -111,11 +107,11 @@ public class Tetris{
 				if(active == true){
 					move_cnt++;
 					move_cnt %= MOVE_RATE;
-					
+
 					if(move_cnt == 0){
 						deleteMark();
 						move(UNDER, 1);
-						
+
 						if(set_cnt == 0){
 							setBlock();
 							checkLine();
@@ -140,34 +136,34 @@ public class Tetris{
 	//描画処理
 	public void paint(){
 		Graphics2D g = (Graphics2D)bs.getDrawGraphics();
-		
+
 		//背景色で塗りつぶす
 		g.setBackground(Color.white);
 		g.clearRect(0, 0, jf.getWidth(), jf.getHeight());
-		
+
 		//ステージの背景色
 		g.setColor(Color.gray);
 		g.fillRect(f_x0, f_y0, f_w, f_h);
-		
+
 		//ステージの外枠
 		g.setColor(Color.black);
 		g.drawRect(f_x0, f_y0, f_w, f_h);
-		
+
 		//ステージの内枠
 		g.setColor(Color.lightGray);
 		for(int i = 1; i < 20; i++)
 			g.drawLine(f_x0, f_y0 + i * (f_h / 20), f_x0 + f_w, f_y0 + i * (f_h / 20));
 		for(int i = 1; i < 10; i++)
 			g.drawLine(f_x0 + i * (f_w / 10), f_y0, f_x0 + i * (f_w / 10), f_y0 + f_h);
-		
+
 		//ブロック描画
 		drawBlock(g);
-		
+
 		//後処理
 		g.dispose();
 		bs.show();
 	}
-	
+
 	//ブロック描画
 	public void drawBlock(Graphics2D g){
 		//ステージ内ブロック
@@ -203,7 +199,7 @@ public class Tetris{
 				}
 			}
 		}
-		
+
 		//nextブロック
 		int[][] tmp = new int[4][4];
 		for(int i = 0; i < 5; i++){
@@ -241,7 +237,7 @@ public class Tetris{
 				}
 			}
 		}
-		
+
 		//HOLDブロック
 		for(int i = 0; i < hold.length; i++){
 			for(int j = 0; j < hold[i].length; j++){
@@ -276,7 +272,7 @@ public class Tetris{
 			}
 		}
 	}
-	
+
 	//ブロック出現
 	public void startBlock(){
 		if(index == 0 || index == 7)
@@ -284,11 +280,11 @@ public class Tetris{
 		b = block.getBlock(next[index]);
 		index++;
 		index %= 14;
-		bx = 2;
-		by = -2;
+		bx = bx_default;
+		by = by_default;
 		active = true;
 	}
-	
+
 	//next配列セット
 	public void setNextArray(int num){
 		num += 7;
@@ -309,7 +305,7 @@ public class Tetris{
 			next[num + i] = sub[i];
 		}
 	}
-	
+
 	//行が揃ってるかチェック
 	public void checkLine(){
 		for(int i = 0; i < line.length; i++){
@@ -342,7 +338,7 @@ public class Tetris{
 			}
 		}
 	}
-	
+
 	//消したブロック分下にずらす
 	public void downBlock(){
 		int d = 0;
@@ -369,11 +365,11 @@ public class Tetris{
 		for(int i = 0; i < b.length; i++){
 			for(int j = 0; j < b[i].length; j++){
 				if(course == LEFT){
-					if(b[i][j] != 0 && field[by + i][bx + j - 1] != 0)
+					if(by + i >= 0 && b[i][j] != 0 && field[by + i][bx + j - 1] != 0)
 						return;
 				}
 				if(course == RIGHT){
-					if(b[i][j] != 0 && field[by + i][bx + j + 1] != 0)
+					if(by + i >= 0 && b[i][j] != 0 && field[by + i][bx + j + 1] != 0)
 						return;
 				}
 				if(course == UNDER){
@@ -421,7 +417,7 @@ public class Tetris{
 	public void deleteMark(){
 		for(int i = 0; i < b.length; i++){
 			for(int j = 0; j < b[i].length; j++){
-				if(bx + j >= 1 && bx + j <= 10 && by + i >= 0){
+				if(bx + j >= 1 && bx + j <= 10 && by + i >= 0 && by + i < 20){
 					if(field[by + i][bx + j] < 0)
 						field[by + i][bx + j] = 0;
 				}
@@ -494,36 +490,39 @@ public class Tetris{
 		}
 		return min;
 	}
-	
+
 	//HOLDブロックと入れ替え
 	public void holdChange(){
 		if(active == true){
 			int[][] tmp = new int[4][4];
 			int cnt = 0;
+			boolean ng_flag = false;
 			for(int i = 0; i < tmp.length; i++){
 				for(int j = 0; j < tmp[i].length; j++){
 					tmp[i][j] = hold[i][j];
 					hold[i][j] = b[i][j];
 					b[i][j] = tmp[i][j];
-					if(b[i][j] == 0)
-						cnt++;
-					else if(field[by + i][bx + j] != 0){
-						for(int k = 0; k <= i; k++){
-							for(int l = 0; l <= j; l++){
-								tmp[k][l] = b[k][l];
-								b[k][l] = hold[k][l];
-								hold[k][l] = tmp[k][l];
-							}
-						}
-						return;
-					}
+					if(b[i][j] == 0) cnt++;
+					else if(field[by + i][bx + j] != 0) ng_flag = true;
 				}
 			}
-			if(cnt == 16)
-				startBlock();
+			if(ng_flag){
+				for(int i = 0; i < tmp.length; i++){
+					for(int j = 0; j < tmp[i].length; j++){
+						tmp[i][j] = b[i][j];
+						b[i][j] = hold[i][j];
+						hold[i][j] = tmp[i][j];
+					}					
+				}
+				return;
+			}
+			if(cnt == 16){
+				//startBlock();
+				setBlock();
+			}
 		}
 	}
-	
+
 	//GameOverチェック
 	public boolean gameOverCheck(){
 		for(int i = 0; i < b.length; i++){
@@ -536,7 +535,7 @@ public class Tetris{
 		}
 		return false;
 	}
-	
+
 	//GameOverエフェクト
 	public void gameOverEffect(){
 		Graphics2D g = (Graphics2D)bs.getDrawGraphics();
@@ -558,7 +557,7 @@ public class Tetris{
 		}
 		g.dispose();
 	}
-	
+
 	//キーボードアクション
 	class MyKeyListener extends KeyAdapter{
 		public void keyPressed(KeyEvent e){
@@ -609,56 +608,56 @@ public class Tetris{
 class Block {
 	static int block[][][] =
 		{
-			{	//水色
-				{0, 0, 0, 0},
-				{1, 1, 1, 1},
-				{0, 0, 0, 0},
-				{0, 0, 0, 0},
-			},
+				{	//水色
+					{0, 0, 0, 0},
+					{1, 1, 1, 1},
+					{0, 0, 0, 0},
+					{0, 0, 0, 0},
+				},
 
-			{	//黄色
-				{0, 0, 0, 0},
-				{0, 2, 2, 0},
-				{0, 2, 2, 0},
-				{0, 0, 0, 0},
-			},
-			
-			{	//紫
-				{0, 0, 0, 0},
-				{0, 0, 3, 0},
-				{0, 3, 3, 3},
-				{0, 0, 0, 0},
-			},
+				{	//黄色
+					{0, 0, 0, 0},
+					{0, 2, 2, 0},
+					{0, 2, 2, 0},
+					{0, 0, 0, 0},
+				},
 
-			{	//オレンジ
-				{0, 0, 0, 0},
-				{0, 4, 4, 4},
-				{0, 4, 0, 0},
-				{0, 0, 0, 0},
-			},
-			
-			{	//青
-				{0, 0, 0, 0},
-				{0, 5, 5, 5},
-				{0, 0, 0, 5},
-				{0, 0, 0, 0},
-			},
-			
-			{	//緑
-				{0, 0, 0, 0},
-				{0, 0, 6, 6},
-				{0, 6, 6, 0},
-				{0, 0, 0, 0},
-			},
+				{	//紫
+					{0, 0, 0, 0},
+					{0, 0, 3, 0},
+					{0, 3, 3, 3},
+					{0, 0, 0, 0},
+				},
 
-			{	//赤
-				{0, 0, 0, 0},
-				{0, 7, 7, 0},
-				{0, 0, 7, 7},
-				{0, 0, 0, 0},
-			},
-	};
-	
+				{	//オレンジ
+					{0, 0, 0, 0},
+					{0, 4, 4, 4},
+					{0, 4, 0, 0},
+					{0, 0, 0, 0},
+				},
+
+				{	//青
+					{0, 0, 0, 0},
+					{0, 5, 5, 5},
+					{0, 0, 0, 5},
+					{0, 0, 0, 0},
+				},
+
+				{	//緑
+					{0, 0, 0, 0},
+					{0, 0, 6, 6},
+					{0, 6, 6, 0},
+					{0, 0, 0, 0},
+				},
+
+				{	//赤
+					{0, 0, 0, 0},
+					{0, 7, 7, 0},
+					{0, 0, 7, 7},
+					{0, 0, 0, 0},
+				},
+		};
+
 	public int[][] getBlock(int num){
 		return block[num];
 	}
