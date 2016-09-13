@@ -25,7 +25,7 @@ public class Tetris{
 	JFrame jf;
 	BufferStrategy bs;
 	Block block;
-	int[][] b;
+	int[][] b = new int[4][4];
 	int[][] hold = new int[4][4];
 	int[] line = new int[20];
 	boolean active;
@@ -35,7 +35,7 @@ public class Tetris{
 	int[] next = new int[14];
 	int index = 0;
 
-	final int MOVE_RATE = 30;
+	final int MOVE_RATE = 25;
 	final int SET_RATE = 3;
 	final int LEFT = 1;
 	final int RIGHT = 2;
@@ -200,7 +200,7 @@ public class Tetris{
 			}
 		}
 
-		//nextブロック
+		//nextブロック描画
 		int[][] tmp = new int[4][4];
 		for(int i = 0; i < 5; i++){
 			tmp = block.getBlock(next[(index + i) % 14]);
@@ -238,7 +238,7 @@ public class Tetris{
 			}
 		}
 
-		//HOLDブロック
+		//HOLDブロック描画
 		for(int i = 0; i < hold.length; i++){
 			for(int j = 0; j < hold[i].length; j++){
 				if(hold[i][j] != 0){
@@ -272,12 +272,21 @@ public class Tetris{
 			}
 		}
 	}
-
+	
+	//参照先のブロックをb配列にコピー
+	public void copyBlock(int array[][]){
+		for(int i = 0; i < array.length; i++){
+			for(int j = 0; j < array[i].length; j++){
+				b[i][j] = array[i][j];
+			}
+		}
+	}
+	
 	//ブロック出現
 	public void startBlock(){
 		if(index == 0 || index == 7)
 			setNextArray(index);
-		b = block.getBlock(next[index]);
+		copyBlock(block.getBlock(next[index]));
 		index++;
 		index %= 14;
 		bx = bx_default;
@@ -305,7 +314,7 @@ public class Tetris{
 			next[num + i] = sub[i];
 		}
 	}
-
+	
 	//行が揃ってるかチェック
 	public void checkLine(){
 		for(int i = 0; i < line.length; i++){
@@ -337,6 +346,43 @@ public class Tetris{
 				}
 			}
 		}
+	}
+	
+	//削除エフェクト
+	public void deleteEffect(){
+		int cnt = 0;
+		int row;
+		g.setColor(Color.white);
+		for(int i = 0; i < line.length; i++){
+			if(line[i] == 1){
+				g.fillRect();
+			}
+		}
+		bs.show();
+		try{
+			Thread.sleep(20);
+		}
+		catch(Exception e){
+		}
+		for(int i = 0; i < line.length; i++){
+			if(line[i] == 1){
+				g.setColor(Color.lightGray);
+				g.fillRect();
+				g.setColor(Color.black);
+				cnt++;
+				row = i;
+				for(int j = 1; j <= 10; j++){
+					g.drawRect();
+				}
+			}
+		}
+		if(cnt == 4){
+			Font font = new Font("Arial", Font.BOLD | Font.ITALIC, 30);
+			g.setFont(font);
+			FontMetrics fm = g.getFontMetrics(font);
+			int str_w = fm.stringWidth();
+			g.setColor(Color.white);
+			g.drawString("TETRIS"
 	}
 
 	//消したブロック分下にずらす
@@ -493,7 +539,7 @@ public class Tetris{
 
 	//HOLDブロックと入れ替え
 	public void holdChange(){
-		if(active == true){
+		if(active == true && by >= 0){
 			int[][] tmp = new int[4][4];
 			int cnt = 0;
 			boolean ng_flag = false;
