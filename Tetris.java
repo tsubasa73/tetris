@@ -382,7 +382,14 @@ public class Tetris{
 			FontMetrics fm = g.getFontMetrics(font);
 			int str_w = fm.stringWidth();
 			g.setColor(Color.white);
-			g.drawString("TETRIS"
+			g.drawString("TETRIS", (f_w / 2) - (str_w / 2), (row - 1) * h);
+		}
+		bs.show();
+		try{
+			Thread.sleep(20);
+		}
+		catch(Exception e){
+		}
 	}
 
 	//消したブロック分下にずらす
