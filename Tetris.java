@@ -8,17 +8,19 @@ import javax.swing.*;
 public class Tetris{
 	int[][] field = new int[21][12];
 	final int width = 650;
-	final int height = 600;
-	final int f_x0 = 140;
+	final int height = 650;
+	final int f_x0 = 160;
 	final int f_y0 = 70;
 	final int f_w = 300;
 	final int f_h = 500;
-	final int n_x0 = 30;
+	final int n_x0 = 25;
 	final int n_y0 = f_y0;
+	final int n_w = 100;
+	final int n_h = f_h;
+	final int nb_h = 20;
+	final int nb2_h = 15;
 	final int h_x0 = f_x0 + f_w + 30;
 	final int h_y0 = f_y0;
-	final int h = 15;
-	final int space = 10;
 	int bx, by;
 	int bx_default = 3;
 	int by_default = -2;
@@ -30,12 +32,19 @@ public class Tetris{
 	int[] line = new int[20];
 	boolean active;
 	boolean gameover;
+	boolean pause;
+	boolean gameovereff;
 	int move_cnt;
 	int set_cnt;
 	int[] next = new int[14];
 	int index = 0;
-
-	final int MOVE_RATE = 25;
+	Font font, sfont;
+	final int font_size = 25;
+	final int font_size2 = 40;
+	long score;
+	int delete_num;
+	int move_rate = 25;
+	
 	final int SET_RATE = 3;
 	final int LEFT = 1;
 	final int RIGHT = 2;
@@ -69,7 +78,6 @@ public class Tetris{
 
 		timer = new Timer();
 		timer.schedule(new MyTimerTask(), 0, 16);
-
 	}
 
 	//初期化
@@ -89,6 +97,11 @@ public class Tetris{
 				}
 			}
 		}
+		for(int i = 0; i < hold.length; i++){
+			for(int j = 0; j < hold[i].length; j++){
+				hold[i][j] = 0;
+			}
+		}
 		block = new Block();
 		setNextArray(0);
 		setNextArray(7);
@@ -96,37 +109,48 @@ public class Tetris{
 		move_cnt = 0;
 		set_cnt = 1;
 		gameover = false;
+		pause = false;
+		gameovereff = false;
+		font = new Font("Arial", Font.BOLD, font_size);
+		sfont = new Font("Arial", Font.BOLD, font_size2);
+		score = 0;
+		delete_num = 0;
 	}
 
 	//タスク処理
 	class MyTimerTask extends TimerTask{
-
 		@Override
 		public void run(){
-			if(gameover == false){
+			if(gameover == false && pause == false){
 				if(active == true){
 					move_cnt++;
-					move_cnt %= MOVE_RATE;
-
+					move_cnt %= move_rate;
 					if(move_cnt == 0){
 						deleteMark();
 						move(UNDER, 1);
-
 						if(set_cnt == 0){
 							setBlock();
+							active = false;
+							pause = true;
 							if(checkLine()){
 								deleteEffect();
+								addScore();
 								downBlock();
+								speedUp();
 							}
+							pause = false;
 						}else{
 							setTempBlock();
 						}
 					}
 				}else{
 					startBlock();
+					active = true;
 					if(gameOverCheck()){
 						gameover = true;
-						gameOverEffect();
+						if(gameovereff == false){
+							gameOverEffect();
+						}
 						return;
 					}
 				}
@@ -150,13 +174,43 @@ public class Tetris{
 		//ステージの外枠
 		g.setColor(Color.black);
 		g.drawRect(f_x0, f_y0, f_w, f_h);
-
+		
+		//NEXTブロックの外枠とフォント
+		g.setStroke(new BasicStroke(4.0f));
+		g.drawRoundRect(n_x0, n_y0, n_w, n_h, 10, 10);
+		g.setStroke(new BasicStroke(1.0f));
+		g.setColor(Color.lightGray);
+		g.fillRoundRect(n_x0, n_y0, n_w, n_h, 10, 10);
+		g.setFont(font);
+		FontMetrics fm = g.getFontMetrics(font);
+		int str_w = fm.stringWidth("NEXT");
+		g.setColor(Color.white);
+		g.drawString("NEXT", n_x0 + (n_w / 2) - (str_w / 2), n_y0 + nb_h * 4 + 20);
+		
+		//HOLDブロックの外枠とフォント
+		g.setColor(Color.black);
+		g.setStroke(new BasicStroke(4.0f));
+		g.drawRoundRect(h_x0, h_y0, n_w, n_w, 10, 10);
+		g.setStroke(new BasicStroke(1.0f));
+		g.setColor(Color.lightGray);
+		g.fillRoundRect(h_x0, h_y0, n_w, n_w, 10, 10);
+		str_w = fm.stringWidth("HOLD");
+		g.setColor(Color.white);
+		g.drawString("HOLD", h_x0 + (n_w / 2) - (str_w / 2), h_y0 + nb_h * 4 + 15);
+		
 		//ステージの内枠
 		g.setColor(Color.lightGray);
 		for(int i = 1; i < 20; i++)
 			g.drawLine(f_x0, f_y0 + i * (f_h / 20), f_x0 + f_w, f_y0 + i * (f_h / 20));
 		for(int i = 1; i < 10; i++)
 			g.drawLine(f_x0 + i * (f_w / 10), f_y0, f_x0 + i * (f_w / 10), f_y0 + f_h);
+		
+		//スコア表示
+		g.setColor(Color.black);
+		g.setFont(sfont);
+		fm = g.getFontMetrics(sfont);
+		str_w = fm.stringWidth(String.format("%08d", score));
+		g.drawString(String.format("%08d", score), f_x0 + (f_w / 2) - (str_w / 2), f_y0 + f_h + 40);
 
 		//ブロック描画
 		drawBlock(g);
@@ -204,7 +258,16 @@ public class Tetris{
 
 		//nextブロック描画
 		int[][] tmp = new int[4][4];
+		int h, w_space;
+		int[] h_space = {20, 80, 45, 45, 45};
 		for(int i = 0; i < 5; i++){
+			if(i == 0){
+				h = nb_h;
+				w_space = 5;
+			}else{
+				h = nb2_h;
+				w_space = 10;
+			}
 			tmp = block.getBlock(next[(index + i) % 14]);
 			for(int j = 0; j < tmp.length; j++){
 				for(int k = 0; k < tmp[j].length; k++){
@@ -232,15 +295,16 @@ public class Tetris{
 							g.setColor(Color.red);
 							break;
 						}
-						g.fillRect(n_x0 + k * h, n_y0 + j * h + i * (tmp.length * h + space), h, h);
+						g.fillRect(w_space + n_x0 + k * h, n_y0 + j * h + i * (tmp.length * h + h_space[i]), h, h);
 						g.setColor(Color.black);
-						g.drawRect(n_x0 + k * h, n_y0 + j * h + i * (tmp.length * h + space), h, h);
+						g.drawRect(w_space + n_x0 + k * h, n_y0 + j * h + i * (tmp.length * h + h_space[i]), h, h);
 					}
 				}
 			}
 		}
 
-		//HOLDブロック描画
+		//holdブロック描画
+		w_space = 5;
 		for(int i = 0; i < hold.length; i++){
 			for(int j = 0; j < hold[i].length; j++){
 				if(hold[i][j] != 0){
@@ -267,14 +331,14 @@ public class Tetris{
 						g.setColor(Color.red);
 						break;
 					}
-					g.fillRect(h_x0 + j * h, h_y0 + i * h , h, h);
+					g.fillRect(w_space + h_x0 + j * nb_h, h_y0 + i * nb_h , nb_h, nb_h);
 					g.setColor(Color.black);
-					g.drawRect(h_x0 + j * h, h_y0 + i * h , h, h);
+					g.drawRect(w_space + h_x0 + j * nb_h, h_y0 + i * nb_h , nb_h, nb_h);
 				}
 			}
 		}
 	}
-	
+
 	//参照先のブロックをb配列にコピー
 	public void copyBlock(int array[][]){
 		for(int i = 0; i < array.length; i++){
@@ -283,7 +347,7 @@ public class Tetris{
 			}
 		}
 	}
-	
+
 	//ブロック出現
 	public void startBlock(){
 		if(index == 0 || index == 7)
@@ -293,7 +357,6 @@ public class Tetris{
 		index %= 14;
 		bx = bx_default;
 		by = by_default;
-		active = true;
 	}
 
 	//next配列セット
@@ -316,15 +379,14 @@ public class Tetris{
 			next[num + i] = sub[i];
 		}
 	}
-	
+
 	//行が揃ってるかチェック
 	public boolean checkLine(){
 		boolean flag = false;
-		
+
 		for(int i = 0; i < line.length; i++){
 			line[i] = 0;
 		}
-
 		for(int i = 19; i > 0; i--){
 			int cnt = 0;
 			for(int j = 1; j <= 10; j++){
@@ -342,23 +404,44 @@ public class Tetris{
 		}
 		return flag;
 	}
-
-	//行削除
-	public void deleteLineBlock(){
-		for(int i = 19; i > 0; i--){
-			if(line[i] == 1){
-				for(int j = 0; j <= 10; j++){
-					field[i][j] = 0;
-				}
-			}
+	
+	//スコア加算
+	public void addScore(){
+		int delete_row = 0;
+		for(int i = 0; i < line.length; i++){
+			if(line[i] == 1)
+				delete_row++;
+		}
+		switch(delete_row){
+		case 0:
+			break;
+		case 1:
+			score += 400;
+			break;
+		case 2:
+			score += 1000;
+			break;
+		case 3:
+			score += 3000;
+			break;
+		case 4:
+			score += 12000;
+			break;
+		}
+		delete_num += delete_row;
+	}
+	
+	//スピードアップ
+	public void speedUp(){
+		if(delete_num >= 10 && move_rate >= 5){
+			delete_num %= 10;
+			move_rate -= 5;
 		}
 	}
 	
-	//削除エフェクト
+	//ブロック削除エフェクト
 	public void deleteEffect(){
 		Graphics2D g = (Graphics2D)bs.getDrawGraphics();
-		int cnt = 0;
-		int row;
 		g.setColor(Color.white);
 		for(int i = 0; i < line.length; i++){
 			if(line[i] == 1){
@@ -367,35 +450,29 @@ public class Tetris{
 		}
 		bs.show();
 		try{
-			Thread.sleep(500);
+			Thread.sleep(300);
 		}
 		catch(Exception e){
 		}
-		for(int i = 0; i < line.length; i++){
-			if(line[i] == 1){
-				g.setColor(Color.lightGray);
-				//g.fillRect();
-				g.setColor(Color.black);
-				cnt++;
-				row = i;
-				for(int j = 1; j <= 10; j++){
-					//g.drawRect();
+		for(int j = 1; j <= 10; j++){
+			for(int i = 0; i < line.length; i++){
+				if(line[i] == 1){
+					g.setColor(Color.gray);
+					g.fillRect(f_x0 + (j - 1) * (f_w / 10), f_y0 + i * (f_h / 20), f_w / 10, f_h / 20);
+					g.setColor(Color.lightGray);
+					g.drawRect(f_x0 + (j - 1) * (f_w / 10), f_y0 + i * (f_h / 20), f_w / 10, f_h / 20);
 				}
 			}
-		}
-		if(cnt == 4){
-		/*
-			Font font = new Font("Arial", Font.BOLD | Font.ITALIC, 30);
-			g.setFont(font);
-			FontMetrics fm = g.getFontMetrics(font);
-			int str_w = fm.stringWidth();
-			g.setColor(Color.white);
-			g.drawString("TETRIS", (f_w / 2) - (str_w / 2), (row - 1) * h);
-		*/
+			bs.show();
+			try{
+				Thread.sleep(1);
+			}
+			catch(Exception e){
+			}
 		}
 		bs.show();
 		try{
-			Thread.sleep(20);
+			Thread.sleep(300);
 		}
 		catch(Exception e){
 		}
@@ -455,7 +532,7 @@ public class Tetris{
 		}
 	}
 
-	//移動ブロックをフィールドに一時的にセット
+	//アクティブブロックをフィールドに一時的にセット
 	public void setTempBlock(){
 		for(int i = 0; i < b.length; i++){
 			for(int j = 0; j < b[i].length; j++){
@@ -473,7 +550,6 @@ public class Tetris{
 					field[by + i][bx + j] = b[i][j];
 			}
 		}
-		active = false;
 	}
 
 	//ブロック移動時に跡を消す
@@ -491,6 +567,7 @@ public class Tetris{
 	//ブロック右回転
 	public void rotate(){
 		int[][] temp = new int[4][4];
+		boolean ng_flag = false;
 
 		for(int i = 0; i < b.length; i++){
 			for(int j = 0; j < b[i].length; j++){
@@ -502,31 +579,45 @@ public class Tetris{
 				b[j][3 - i] = temp[i][j];
 			}
 		}
-
-		if(bx <= 0){
+		
+		//左壁にぶつかってるか判定
+		if(!ng_flag && bx <= 0){
 			for(int i = 0; i < b.length; i++){
-				if(b[i][0 - bx] != 0){
-					for(int j = 0; j < b.length; j++){
-						for(int k = 0; k < b[j].length; k++){
-							b[j][k] = temp[j][k];
-						}
-					}
-					return;
+				if(b[i][0 - bx] != 0)
+					ng_flag = true;
+			}
+		}
+		//右壁にぶつかってるか判定
+		if(!ng_flag && bx >= 8){
+			for(int i = 0; i < b.length; i++){
+				if(b[i][11 - bx] != 0)
+					ng_flag = true;
+			}
+		}
+		//地面にぶつかってるか判定
+		if(!ng_flag && by >= 17){
+			for(int i = 0; i < b[0].length; i++){
+				if(b[20 - by][i] != 0)
+					ng_flag = true;
+			}
+		}
+		//回転した結果既存ブロックとぶつかるか判定
+		if(!ng_flag){
+			for(int i = 0; i < b.length; i++){
+				for(int j = 0; j < b[i].length; j++){
+					if(b[i][j] != 0 && field[by + i][bx + j] != 0)
+						ng_flag = true;
 				}
 			}
 		}
-
-		if(bx >= 8){
+		
+		if(ng_flag){
 			for(int i = 0; i < b.length; i++){
-				if(b[i][11 - bx] != 0){
-					for(int j = 0; j < b.length; j++){
-						for(int k = 0; k < b[j].length; k++){
-							b[j][k] = temp[j][k];
-						}
-					}
-					return;
+				for(int j = 0; j < b[i].length; j++){
+					b[i][j] = temp[i][j];
 				}
 			}
+			return;
 		}
 	}
 
@@ -566,7 +657,8 @@ public class Tetris{
 					hold[i][j] = b[i][j];
 					b[i][j] = tmp[i][j];
 					if(b[i][j] == 0) cnt++;
-					else if(field[by + i][bx + j] != 0) ng_flag = true;
+					else if(field[by + i][bx + j] != 0)
+						ng_flag = true;
 				}
 			}
 			if(ng_flag){
@@ -575,13 +667,12 @@ public class Tetris{
 						tmp[i][j] = b[i][j];
 						b[i][j] = hold[i][j];
 						hold[i][j] = tmp[i][j];
-					}					
+					}
 				}
 				return;
 			}
 			if(cnt == 16){
-				//startBlock();
-				setBlock();
+				startBlock();
 			}
 		}
 	}
@@ -601,6 +692,7 @@ public class Tetris{
 
 	//GameOverエフェクト
 	public void gameOverEffect(){
+		gameovereff = true;
 		Graphics2D g = (Graphics2D)bs.getDrawGraphics();
 		for(int i = 19; i >= 0; i--){
 			for(int j = 1; j <= 10; j++){
@@ -618,6 +710,23 @@ public class Tetris{
 				}
 			}
 		}
+		try{
+			Thread.sleep(100);
+		}
+		catch(Exception e){
+		}
+		g.setFont(sfont);
+		FontMetrics fm = g.getFontMetrics(sfont);
+		int str_w = fm.stringWidth("GAME OVER");
+		g.setColor(Color.red);
+		g.drawString("GAME OVER", f_x0 + (f_w / 2) - (str_w / 2), f_y0 + (f_h / 2));
+		
+		g.setFont(font);
+		fm = g.getFontMetrics(font);
+		str_w = fm.stringWidth("press Enter key");
+		g.setColor(Color.white);
+		g.drawString("press Enter key", f_x0 + (f_w / 2) - (str_w / 2), f_y0 + (f_h / 2) + 30);
+		bs.show();
 		g.dispose();
 	}
 
@@ -642,20 +751,29 @@ public class Tetris{
 				setTempBlock();
 			}
 			if(keycode == KeyEvent.VK_SPACE){
-				deleteMark();
-				rotate();
-				setTempBlock();
+				if(by >= 0){
+					deleteMark();
+					rotate();
+					setTempBlock();
+				}
 			}
 			if(keycode == KeyEvent.VK_ENTER){
 				if(gameover == false){
+					if(by < 0) return;
 					deleteMark();
 					int num = dropBlock();
 					move(UNDER, num);
 					setBlock();
+					paint();
+					active = false;
+					pause = true;
 					if(checkLine()){
 						deleteEffect();
+						addScore();
 						downBlock();
+						speedUp();
 					}
+					pause = false;
 				}else{
 					init();
 				}
