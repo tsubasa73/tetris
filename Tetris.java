@@ -114,8 +114,10 @@ public class Tetris{
 
 						if(set_cnt == 0){
 							setBlock();
-							checkLine();
-							downBlock();
+							if(checkLine()){
+								deleteEffect();
+								downBlock();
+							}
 						}else{
 							setTempBlock();
 						}
@@ -316,7 +318,9 @@ public class Tetris{
 	}
 	
 	//行が揃ってるかチェック
-	public void checkLine(){
+	public boolean checkLine(){
+		boolean flag = false;
+		
 		for(int i = 0; i < line.length; i++){
 			line[i] = 0;
 		}
@@ -328,13 +332,15 @@ public class Tetris{
 					cnt++;
 			}
 			if(cnt == 0){
-				return;
+				return flag;
 			}else if(cnt == 10){
 				line[i] = 1;
+				flag = true;
 			}else{
 				line[i] = -1;
 			}
 		}
+		return flag;
 	}
 
 	//行削除
@@ -350,39 +356,42 @@ public class Tetris{
 	
 	//削除エフェクト
 	public void deleteEffect(){
+		Graphics2D g = (Graphics2D)bs.getDrawGraphics();
 		int cnt = 0;
 		int row;
 		g.setColor(Color.white);
 		for(int i = 0; i < line.length; i++){
 			if(line[i] == 1){
-				g.fillRect();
+				g.fillRect(f_x0, f_y0 + i * (f_h / 20), f_w, f_h / 20);
 			}
 		}
 		bs.show();
 		try{
-			Thread.sleep(20);
+			Thread.sleep(500);
 		}
 		catch(Exception e){
 		}
 		for(int i = 0; i < line.length; i++){
 			if(line[i] == 1){
 				g.setColor(Color.lightGray);
-				g.fillRect();
+				//g.fillRect();
 				g.setColor(Color.black);
 				cnt++;
 				row = i;
 				for(int j = 1; j <= 10; j++){
-					g.drawRect();
+					//g.drawRect();
 				}
 			}
 		}
 		if(cnt == 4){
+		/*
 			Font font = new Font("Arial", Font.BOLD | Font.ITALIC, 30);
 			g.setFont(font);
 			FontMetrics fm = g.getFontMetrics(font);
 			int str_w = fm.stringWidth();
 			g.setColor(Color.white);
 			g.drawString("TETRIS", (f_w / 2) - (str_w / 2), (row - 1) * h);
+		*/
 		}
 		bs.show();
 		try{
@@ -390,6 +399,7 @@ public class Tetris{
 		}
 		catch(Exception e){
 		}
+		g.dispose();
 	}
 
 	//消したブロック分下にずらす
@@ -544,7 +554,7 @@ public class Tetris{
 		return min;
 	}
 
-	//HOLDブロックと入れ替え
+	//holdブロックと入れ替え
 	public void holdChange(){
 		if(active == true && by >= 0){
 			int[][] tmp = new int[4][4];
@@ -642,9 +652,10 @@ public class Tetris{
 					int num = dropBlock();
 					move(UNDER, num);
 					setBlock();
-					checkLine();
-					//deleteLineBlock();
-					downBlock();
+					if(checkLine()){
+						deleteEffect();
+						downBlock();
+					}
 				}else{
 					init();
 				}
