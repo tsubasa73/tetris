@@ -702,7 +702,7 @@ public class Tetris{
 					g.setColor(Color.black);
 					g.drawRect(f_x0 + (j - 1) * (f_w / 10), f_y0 + i * (f_h / 20), f_w / 10, f_h / 20);
 					try{
-						Thread.sleep(80);
+						Thread.sleep(40);
 					}
 					catch(Exception e){
 					}
@@ -763,6 +763,7 @@ public class Tetris{
 					deleteMark();
 					int num = dropBlock();
 					move(UNDER, num);
+					score += num * 10;
 					setBlock();
 					paint();
 					active = false;
